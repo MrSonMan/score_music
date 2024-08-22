@@ -131,7 +131,7 @@
         function updateImage() {
             const fileName = imageFiles[currentImageIndex];
             const img = document.getElementById('selectedImage');
-            img.src = 'score_music/Image/' + fileName;
+            img.src = '/score_music/Image/' + fileName;
             img.alt = fileName;
             img.onerror = function() {
                 console.error('이미지를 불러오는 데 실패했습니다:', fileName);
