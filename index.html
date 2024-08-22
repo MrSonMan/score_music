@@ -10,7 +10,7 @@
             line-height: 1.6;
             margin: 0;
             padding: 20px;
-            background-color: #b0c5e6;
+            background-color: #c6e6b0;
         }
         h1 {
             color: #333;
@@ -131,7 +131,7 @@
         function updateImage() {
             const fileName = imageFiles[currentImageIndex];
             const img = document.getElementById('selectedImage');
-            img.src = '/score_music/Image/' + fileName;
+            img.src = '/Image/' + fileName;
             img.alt = fileName;
             img.onerror = function() {
                 console.error('이미지를 불러오는 데 실패했습니다:', fileName);
