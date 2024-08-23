@@ -3,159 +3,204 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>이미지 갤러리</title>
+    <title>노래 제목과 이미지</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
             margin: 0;
-            padding: 20px;
-            background-color: #c6e6b0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        #listView {
+            padding: 5px;
+            max-width: 800px;
+            margin: 0 auto;
+            width: 100%;
         }
         h1 {
             color: #333;
-        }
-        #imageList {
-            list-style-type: none;
-            padding: 0;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-        #imageList li {
-            width: calc(50% - 5px);
+            text-align: center;
+            font-size: 24px;
             margin-bottom: 10px;
         }
-        #imageList a {
-            color: #0066cc;
-            text-decoration: none;
-            font-size: 0.9em;
-            display: block;
-            height: 2.4em;
+        #songList {
+            list-style-type: none;
+            padding: 0;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3px;
+        }
+        #songList li {
+            cursor: pointer;
+            padding: 8px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            font-size: 12px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 15px;
             overflow: hidden;
             text-overflow: ellipsis;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
+            white-space: nowrap;
         }
-        #imageList a:hover {
-            text-decoration: underline;
+        #songList li:hover {
+            background-color: #e0e0e0;
         }
         #imageView {
             display: none;
-            text-align: center;
+            flex-direction: column;
+            height: 100vh;
+            justify-content: space-between;
         }
-        #imageView img {
+        #imageContainer {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        #imageContainer img {
             max-width: 100%;
-            height: auto;
-            margin-bottom: 20px;
+            max-height: 100%;
+            object-fit: contain;
         }
-        .navigation {
+        #navigationButtons {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-top: 20px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
         }
         button {
-            padding: 10px 15px;
-            background-color: #0066cc;
-            color: white;
-            border: none;
+            margin: 5px;
+            padding: 8px 16px;
+            font-size: 14px;
             cursor: pointer;
+            border: none;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 5px;
         }
         button:hover {
-            background-color: #0056b3;
+            background-color: #45a049;
         }
-        .arrow-button {
-            font-size: 1.5em;
-            padding: 5px 15px;
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #errorMessage {
+            color: red;
+            text-align: center;
+            margin-top: 20px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div id="listView">
-        <h1>이미지 목록</h1>
-        <ul id="imageList"></ul>
+        <h1>노래 제목 목록</h1>
+        <ul id="songList"></ul>
     </div>
-    
     <div id="imageView">
-        <img id="selectedImage" src="" alt="선택된 이미지">
-        <div class="navigation">
-            <button class="arrow-button" onclick="showPreviousImage()">&#8592;</button>
-            <button onclick="backToList()">목록으로 돌아가기</button>
-            <button class="arrow-button" onclick="showNextImage()">&#8594;</button>
+        <div id="imageContainer"></div>
+        <div id="navigationButtons">
+            <button id="backToListButton">목록으로</button>
+            <div>
+                <button id="prevButton">이전</button>
+                <button id="nextButton">다음</button>
+            </div>
         </div>
     </div>
+    <div id="errorMessage"></div>
 
     <script>
-        let currentImageIndex = 0;
-        let imageFiles = [];
+        let songs = [];
+        let currentIndex = 0;
 
-        function loadImageList() {
-            fetch('images.json')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('HTTP error ' + response.status);
+        async function fetchCSV() {
+            try {
+                const response = await fetch('list_name.csv');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.text();
+                console.log("CSV 파일 내용:", data);
+                const rows = data.split('\n').slice(1);
+                return rows.filter(row => row.trim() !== '').map(row => {
+                    const [fileName, orgName] = row.split(',');
+                    if (fileName && orgName) {
+                        return { fileName: fileName.trim(), orgName: orgName.trim() };
                     }
-                    return response.json();
-                })
-                .then(data => {
-                    imageFiles = data;
-                    const imageList = document.getElementById('imageList');
-                    imageFiles.forEach((file, index) => {
-                        const li = document.createElement('li');
-                        const a = document.createElement('a');
-                        a.href = '#';
-                        a.textContent = file;
-                        a.onclick = function(e) {
-                            e.preventDefault();
-                            showImage(index);
-                        };
-                        li.appendChild(a);
-                        imageList.appendChild(li);
-                    });
-                })
-                .catch(error => {
-                    console.error('이미지 목록을 불러오는 데 실패했습니다:', error);
-                    document.getElementById('imageList').innerHTML = '이미지 목록을 불러오는 데 실패했습니다. 콘솔에서 자세한 오류를 확인하세요.';
-                });
+                    console.warn('잘못된 형식의 행:', row);
+                    return null;
+                }).filter(item => item !== null);
+            } catch (error) {
+                console.error('CSV 파일을 불러오는 데 실패했습니다:', error);
+                document.getElementById('errorMessage').textContent = `오류 발생: ${error.message}`;
+                return [];
+            }
         }
 
         function showImage(index) {
-            currentImageIndex = index;
-            document.getElementById('listView').style.display = 'none';
-            document.getElementById('imageView').style.display = 'block';
-            updateImage();
+            const song = songs[index];
+            document.getElementById('imageContainer').innerHTML = `
+                <img src="images/${song.orgName}" alt="${song.fileName}">
+            `;
+            document.getElementById('prevButton').disabled = index === 0;
+            document.getElementById('nextButton').disabled = index === songs.length - 1;
         }
 
-        function updateImage() {
-            const fileName = imageFiles[currentImageIndex];
-            const img = document.getElementById('selectedImage');
-            img.src = 'Image/' + fileName;
-            img.alt = fileName;
-            img.onerror = function() {
-                console.error('이미지를 불러오는 데 실패했습니다:', fileName);
-                this.src = 'placeholder.jpg'; // 오류 시 표시할 플레이스홀더 이미지
-                this.alt = '이미지를 불러올 수 없습니다';
-            };
-        }
-
-        function showPreviousImage() {
-            currentImageIndex = (currentImageIndex - 1 + imageFiles.length) % imageFiles.length;
-            updateImage();
-        }
-
-        function showNextImage() {
-            currentImageIndex = (currentImageIndex + 1) % imageFiles.length;
-            updateImage();
-        }
-
-        function backToList() {
-            document.getElementById('imageView').style.display = 'none';
+        function showListView() {
             document.getElementById('listView').style.display = 'block';
+            document.getElementById('imageView').style.display = 'none';
         }
 
-        window.onload = loadImageList;
+        function showImageView() {
+            document.getElementById('listView').style.display = 'none';
+            document.getElementById('imageView').style.display = 'flex';
+        }
+
+        async function initializePage() {
+            songs = await fetchCSV();
+            const songList = document.getElementById('songList');
+
+            if (songs.length === 0) {
+                songList.innerHTML = '<li>노래 목록을 불러오는 데 실패했습니다.</li>';
+                return;
+            }
+
+            songs.forEach((song, index) => {
+                const li = document.createElement('li');
+                li.textContent = song.fileName;
+                li.onclick = () => {
+                    currentIndex = index;
+                    showImage(currentIndex);
+                    showImageView();
+                };
+                songList.appendChild(li);
+            });
+
+            document.getElementById('prevButton').onclick = () => {
+                if (currentIndex > 0) {
+                    currentIndex--;
+                    showImage(currentIndex);
+                }
+            };
+
+            document.getElementById('nextButton').onclick = () => {
+                if (currentIndex < songs.length - 1) {
+                    currentIndex++;
+                    showImage(currentIndex);
+                }
+            };
+
+            document.getElementById('backToListButton').onclick = showListView;
+        }
+
+        window.onload = initializePage;
     </script>
 </body>
 </html>
