@@ -156,6 +156,11 @@
         function showListView() {
             document.getElementById('listView').style.display = 'block';
             document.getElementById('imageView').style.display = 'none';
+            // 현재 선택된 노래로 스크롤
+            const selectedSong = document.querySelector(`#songList li:nth-child(${currentIndex + 1})`);
+            if (selectedSong) {
+                selectedSong.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
         }
 
         function showImageView() {
